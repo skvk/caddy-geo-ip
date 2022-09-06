@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	s "strings"
 
 	"github.com/caddyserver/caddy/v2"
 	"github.com/caddyserver/caddy/v2/caddyconfig/caddyfile"
@@ -109,6 +110,11 @@ func (m *GeoIP) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyhttp
 
 	if m.TrustHeader != "" && r.Header.Get(m.TrustHeader) != "" {
 		r.RemoteAddr = r.Header.Get(m.TrustHeader)
+	}
+
+	if s.Contains(r.RemoteAddr, ",") {
+	    ips := s.Split(r.RemoteAddr, ",")
+	    r.RemoteAddr = s.TrimSpace(ips[0])
 	}
 
 	m.logger.Debug("loading ip address", zap.String("remoteaddr", r.RemoteAddr))
