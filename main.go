@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	s "strings"
 
 	"github.com/caddyserver/caddy/v2"
 	"github.com/caddyserver/caddy/v2/caddyconfig/caddyfile"
@@ -111,11 +112,18 @@ func (m *GeoIP) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyhttp
 		r.RemoteAddr = r.Header.Get(m.TrustHeader)
 	}
 
+	if s.Contains(r.RemoteAddr, ",") {
+	    ips := s.Split(r.RemoteAddr, ",")
+	    r.RemoteAddr = s.TrimSpace(ips[0])
+	}
+
 	m.logger.Debug("loading ip address", zap.String("remoteaddr", r.RemoteAddr))
 
 	remoteIp, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
-		m.logger.Warn("cannot split IP address", zap.String("address", r.RemoteAddr), zap.Error(err))
+	    // If we are unable to split host and port, most likely there is no port info,
+	    // safe to ignore and just use the r.RemoteAddr
+		remoteIp = r.RemoteAddr
 	}
 
 	// Get the record from the database
